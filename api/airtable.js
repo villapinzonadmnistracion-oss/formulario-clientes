@@ -12,12 +12,17 @@ export default async function handler(req, res) {
     }
 
     // Credenciales desde variables de entorno
-    const AIRTABLE_TOKEN = process.env.TOKEN;
-    const AIRTABLE_BASE_ID = process.env.BASE_ID;
-    const AIRTABLE_TABLE_ID = process.env.TABLE_ID;
+    const AIRTABLE_TOKEN = process.env.TOKEN_AIRTABLE;
+    const AIRTABLE_BASE_ID = process.env.BASE_ID_AIRTABLE;
+    const AIRTABLE_TABLE_ID = process.env.TABLE_ID_AIRTABLE;
 
     // Verificar que las variables de entorno estén configuradas
     if (!AIRTABLE_TOKEN || !AIRTABLE_BASE_ID || !AIRTABLE_TABLE_ID) {
+        console.error('Variables faltantes:', {
+            token: !!AIRTABLE_TOKEN,
+            base: !!AIRTABLE_BASE_ID,
+            table: !!AIRTABLE_TABLE_ID
+        });
         return res.status(500).json({ 
             error: 'Configuración del servidor incompleta' 
         });
@@ -37,6 +42,8 @@ export default async function handler(req, res) {
             });
 
             if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Error de Airtable:', response.status, errorText);
                 throw new Error(`Error de Airtable: ${response.status}`);
             }
 
@@ -64,6 +71,7 @@ export default async function handler(req, res) {
 
             if (!response.ok) {
                 const errorData = await response.json();
+                console.error('Error al crear registro:', errorData);
                 throw new Error(`Error de Airtable: ${JSON.stringify(errorData)}`);
             }
 
