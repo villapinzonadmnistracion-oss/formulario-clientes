@@ -396,65 +396,19 @@
             }, 800);
         });
 
-        async function checkRutDuplicate(rut) {
-    try {
-        const response = await fetch(API_ENDPOINT, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error('Error al consultar la base de datos');
-        }
-
-        const data = await response.json();
-        
-        // Limpiar el RUT de entrada para comparación
-        const rutLimpio = cleanRut(rut);
-        
-        console.log('🔍 Buscando RUT:', rutLimpio);
-        console.log('📋 Total registros:', data.records?.length || 0);
-        
-        const duplicado = data.records.find(record => {
-            const rutEnBase = record.fields['Rut.'];
-            if (!rutEnBase) return false;
+        // Función para obtener TODOS los registros con paginación
+        async function getAllRecords() {
+            let allRecords = [];
+            let offset = null;
             
-            const rutBaseLimpio = cleanRut(rutEnBase.toString());
+            console.log('📡 Obteniendo todos los registros...');
             
-            console.log(`Comparando: "${rutLimpio}" === "${rutBaseLimpio}"`);
-            
-            return rutLimpio === rutBaseLimpio;
-        });
-
-        if (duplicado) {
-            console.log('❌ RUT duplicado encontrado:', duplicado.fields['Rut.']);
-            rutValidation.className = 'validation-message error';
-            rutValidation.innerHTML = '❌ Este RUT ya está registrado';
-            rutInput.className = 'error';
-            isRutValid = false;
-        } else {
-            console.log('✅ RUT disponible');
-            rutValidation.className = 'validation-message success';
-            rutValidation.innerHTML = '✅ RUT disponible';
-            rutInput.className = 'success';
-            isRutValid = true;
-        }
-        checkFormValidity();
-    } catch (error) {
-        console.error('Error:', error);
-        rutValidation.className = 'validation-message error';
-        rutValidation.innerHTML = '⚠️ Error al verificar. Intenta nuevamente.';
-        rutInput.className = 'error';
-        isRutValid = false;
-        checkFormValidity();
-    }
-}
-
-        async function checkCorreoDuplicate(correo) {
-            try {
-                const response = await fetch(API_ENDPOINT, {
+            do {
+                const url = offset 
+                    ? `${API_ENDPOINT}?offset=${offset}` 
+                    : API_ENDPOINT;
+                    
+                const response = await fetch(url, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
@@ -466,18 +420,96 @@
                 }
 
                 const data = await response.json();
+                allRecords = allRecords.concat(data.records);
+                offset = data.offset; // Si hay más páginas, offset tendrá un valor
                 
-                const duplicado = data.records.find(record => {
-                    const correoEnBase = record.fields['Correo Electrónico'];
-                    return correoEnBase && correoEnBase.toString().trim().toLowerCase() === correo.toLowerCase();
+                console.log(`📥 Registros obtenidos: ${allRecords.length}`);
+                
+            } while (offset); // Continuar mientras haya más páginas
+            
+            console.log(`✅ Total de registros obtenidos: ${allRecords.length}`);
+            return allRecords;
+        }
+
+        async function checkRutDuplicate(rut) {
+            try {
+                const allRecords = await getAllRecords();
+                
+                // Limpiar el RUT de entrada para comparación
+                const rutLimpio = cleanRut(rut);
+                
+                console.log('🔍 Buscando RUT:', rutLimpio);
+                console.log('📋 Total registros:', allRecords.length);
+                
+                const duplicado = allRecords.find(record => {
+                    const rutEnBase = record.fields['Rut.'];
+                    if (!rutEnBase) return false;
+                    
+                    const rutBaseLimpio = cleanRut(rutEnBase.toString());
+                    
+                    // Solo mostrar primeras 5 comparaciones para no saturar la consola
+                    if (allRecords.indexOf(record) < 5) {
+                        console.log(`Comparando: "${rutLimpio}" === "${rutBaseLimpio}"`);
+                    }
+                    
+                    return rutLimpio === rutBaseLimpio;
                 });
 
                 if (duplicado) {
+                    console.log('❌ RUT duplicado encontrado:', duplicado.fields['Rut.']);
+                    rutValidation.className = 'validation-message error';
+                    rutValidation.innerHTML = '❌ Este RUT ya está registrado';
+                    rutInput.className = 'error';
+                    isRutValid = false;
+                } else {
+                    console.log('✅ RUT disponible');
+                    rutValidation.className = 'validation-message success';
+                    rutValidation.innerHTML = '✅ RUT disponible';
+                    rutInput.className = 'success';
+                    isRutValid = true;
+                }
+                checkFormValidity();
+            } catch (error) {
+                console.error('Error:', error);
+                rutValidation.className = 'validation-message error';
+                rutValidation.innerHTML = '⚠️ Error al verificar. Intenta nuevamente.';
+                rutInput.className = 'error';
+                isRutValid = false;
+                checkFormValidity();
+            }
+        }
+
+        async function checkCorreoDuplicate(correo) {
+            try {
+                const allRecords = await getAllRecords();
+                
+                const correoLimpio = correo.trim().toLowerCase();
+                
+                console.log('🔍 Buscando correo:', correoLimpio);
+                console.log('📋 Total registros:', allRecords.length);
+                
+                const duplicado = allRecords.find(record => {
+                    const correoEnBase = record.fields['Correo Electrónico'];
+                    if (!correoEnBase) return false;
+                    
+                    const correoBaseLimpio = correoEnBase.toString().trim().toLowerCase();
+                    
+                    // Solo mostrar primeras 5 comparaciones
+                    if (allRecords.indexOf(record) < 5) {
+                        console.log(`Comparando: "${correoLimpio}" === "${correoBaseLimpio}"`);
+                    }
+                    
+                    return correoBaseLimpio === correoLimpio;
+                });
+
+                if (duplicado) {
+                    console.log('❌ Correo duplicado encontrado:', duplicado.fields['Correo Electrónico']);
                     correoValidation.className = 'validation-message error';
                     correoValidation.innerHTML = '❌ Este correo ya está registrado';
                     correoInput.className = 'error';
                     isCorreoValid = false;
                 } else {
+                    console.log('✅ Correo disponible');
                     correoValidation.className = 'validation-message success';
                     correoValidation.innerHTML = '✅ Correo disponible';
                     correoInput.className = 'success';
