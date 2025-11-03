@@ -242,8 +242,11 @@
     </div>
 
     <script>
-        // 🔒 AHORA USA EL ENDPOINT SEGURO
+        // 🔒 ENDPOINT SEGURO
         const API_ENDPOINT = '/api/airtable';
+        
+        // ⚙️ CONFIGURACIÓN: Cambia este número según tus necesidades
+        const MAX_RECORDS_TO_FETCH = 300;
 
         const rutInput = document.getElementById('rut');
         const rutValidation = document.getElementById('rutValidation');
@@ -258,10 +261,9 @@
         let isRutValid = false;
         let isCorreoValid = false;
 
-        // CACHÉ para evitar múltiples llamadas
+        // Caché simple
         let cachedRecords = null;
-        let cacheTime = null;
-        const CACHE_DURATION = 30000; // 30 segundos
+        let isLoading = false;
 
         // Función para formatear RUT chileno
         function formatRut(value) {
@@ -401,23 +403,33 @@
             }, 800);
         });
 
-        // Función para obtener TODOS los registros con paginación Y CACHÉ
-        async function getAllRecords(forceRefresh = false) {
-            const now = Date.now();
-            
-            // Si hay caché válido y no se fuerza el refresh, usar caché
-            if (!forceRefresh && cachedRecords && cacheTime && (now - cacheTime) < CACHE_DURATION) {
-                console.log('📦 Usando registros en caché:', cachedRecords.length);
+        // Función SIMPLE: obtiene solo los primeros X registros (sin paginación infinita)
+        async function getAllRecords() {
+            // Si ya está cargando, esperar
+            if (isLoading) {
+                console.log('⏳ Ya hay una carga en proceso, esperando...');
+                return cachedRecords || [];
+            }
+
+            // Si ya tenemos caché, usarlo
+            if (cachedRecords && cachedRecords.length > 0) {
+                console.log('📦 Usando caché:', cachedRecords.length, 'registros');
                 return cachedRecords;
             }
-            
+
+            isLoading = true;
             let allRecords = [];
-            let offset = null;
+            let pageCount = 0;
+            const maxPages = Math.ceil(MAX_RECORDS_TO_FETCH / 100); // 100 registros por página
             
-            console.log('📡 Obteniendo todos los registros desde Airtable...');
+            console.log(`📡 Obteniendo hasta ${MAX_RECORDS_TO_FETCH} registros (máximo ${maxPages} páginas)...`);
             
             try {
+                let offset = null;
+                
                 do {
+                    pageCount++;
+                    
                     const url = offset 
                         ? `${API_ENDPOINT}?offset=${encodeURIComponent(offset)}` 
                         : API_ENDPOINT;
@@ -435,22 +447,29 @@
 
                     const data = await response.json();
                     allRecords = allRecords.concat(data.records);
-                    offset = data.offset; // Si hay más páginas, offset tendrá un valor
+                    offset = data.offset;
                     
-                    console.log(`📥 Página obtenida. Total acumulado: ${allRecords.length}`);
+                    console.log(`📥 Página ${pageCount}: ${allRecords.length} registros acumulados`);
                     
-                } while (offset); // Continuar mientras haya más páginas
+                    // LÍMITE: detener si alcanzamos el máximo de páginas
+                    if (pageCount >= maxPages) {
+                        console.log(`⚠️ Límite alcanzado: ${maxPages} páginas obtenidas`);
+                        break;
+                    }
+                    
+                } while (offset && pageCount < maxPages);
                 
-                console.log(`✅ Total de registros obtenidos: ${allRecords.length}`);
+                console.log(`✅ Total obtenido: ${allRecords.length} registros`);
                 
                 // Guardar en caché
                 cachedRecords = allRecords;
-                cacheTime = Date.now();
+                isLoading = false;
                 
                 return allRecords;
                 
             } catch (error) {
-                console.error('❌ Error obteniendo registros:', error);
+                console.error('❌ Error:', error);
+                isLoading = false;
                 throw error;
             }
         }
@@ -459,9 +478,7 @@
             try {
                 const allRecords = await getAllRecords();
                 
-                // Limpiar el RUT de entrada para comparación
                 const rutLimpio = cleanRut(rut);
-                
                 console.log('🔍 Buscando RUT:', rutLimpio);
                 
                 const duplicado = allRecords.find(record => {
@@ -501,7 +518,6 @@
                 const allRecords = await getAllRecords();
                 
                 const correoLimpio = correo.trim().toLowerCase();
-                
                 console.log('🔍 Buscando correo:', correoLimpio);
                 
                 const duplicado = allRecords.find(record => {
@@ -593,9 +609,8 @@
                     throw new Error('Error al registrar el cliente');
                 }
 
-                // Limpiar caché para que la próxima validación obtenga datos frescos
+                // Limpiar caché
                 cachedRecords = null;
-                cacheTime = null;
 
                 successMessage.classList.add('show');
                 form.reset();
