@@ -258,6 +258,11 @@
         let isRutValid = false;
         let isCorreoValid = false;
 
+        // CACHÉ para evitar múltiples llamadas
+        let cachedRecords = null;
+        let cacheTime = null;
+        const CACHE_DURATION = 30000; // 30 segundos
+
         // Función para formatear RUT chileno
         function formatRut(value) {
             value = value.replace(/[^0-9kK]/g, '').toUpperCase();
@@ -396,39 +401,58 @@
             }, 800);
         });
 
-        // Función para obtener TODOS los registros con paginación
-        async function getAllRecords() {
+        // Función para obtener TODOS los registros con paginación Y CACHÉ
+        async function getAllRecords(forceRefresh = false) {
+            const now = Date.now();
+            
+            // Si hay caché válido y no se fuerza el refresh, usar caché
+            if (!forceRefresh && cachedRecords && cacheTime && (now - cacheTime) < CACHE_DURATION) {
+                console.log('📦 Usando registros en caché:', cachedRecords.length);
+                return cachedRecords;
+            }
+            
             let allRecords = [];
             let offset = null;
             
-            console.log('📡 Obteniendo todos los registros...');
+            console.log('📡 Obteniendo todos los registros desde Airtable...');
             
-            do {
-                const url = offset 
-                    ? `${API_ENDPOINT}?offset=${offset}` 
-                    : API_ENDPOINT;
-                    
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
+            try {
+                do {
+                    const url = offset 
+                        ? `${API_ENDPOINT}?offset=${encodeURIComponent(offset)}` 
+                        : API_ENDPOINT;
+                        
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Error al consultar la base de datos');
                     }
-                });
 
-                if (!response.ok) {
-                    throw new Error('Error al consultar la base de datos');
-                }
-
-                const data = await response.json();
-                allRecords = allRecords.concat(data.records);
-                offset = data.offset; // Si hay más páginas, offset tendrá un valor
+                    const data = await response.json();
+                    allRecords = allRecords.concat(data.records);
+                    offset = data.offset; // Si hay más páginas, offset tendrá un valor
+                    
+                    console.log(`📥 Página obtenida. Total acumulado: ${allRecords.length}`);
+                    
+                } while (offset); // Continuar mientras haya más páginas
                 
-                console.log(`📥 Registros obtenidos: ${allRecords.length}`);
+                console.log(`✅ Total de registros obtenidos: ${allRecords.length}`);
                 
-            } while (offset); // Continuar mientras haya más páginas
-            
-            console.log(`✅ Total de registros obtenidos: ${allRecords.length}`);
-            return allRecords;
+                // Guardar en caché
+                cachedRecords = allRecords;
+                cacheTime = Date.now();
+                
+                return allRecords;
+                
+            } catch (error) {
+                console.error('❌ Error obteniendo registros:', error);
+                throw error;
+            }
         }
 
         async function checkRutDuplicate(rut) {
@@ -439,19 +463,12 @@
                 const rutLimpio = cleanRut(rut);
                 
                 console.log('🔍 Buscando RUT:', rutLimpio);
-                console.log('📋 Total registros:', allRecords.length);
                 
                 const duplicado = allRecords.find(record => {
                     const rutEnBase = record.fields['Rut.'];
                     if (!rutEnBase) return false;
                     
                     const rutBaseLimpio = cleanRut(rutEnBase.toString());
-                    
-                    // Solo mostrar primeras 5 comparaciones para no saturar la consola
-                    if (allRecords.indexOf(record) < 5) {
-                        console.log(`Comparando: "${rutLimpio}" === "${rutBaseLimpio}"`);
-                    }
-                    
                     return rutLimpio === rutBaseLimpio;
                 });
 
@@ -486,19 +503,12 @@
                 const correoLimpio = correo.trim().toLowerCase();
                 
                 console.log('🔍 Buscando correo:', correoLimpio);
-                console.log('📋 Total registros:', allRecords.length);
                 
                 const duplicado = allRecords.find(record => {
                     const correoEnBase = record.fields['Correo Electrónico'];
                     if (!correoEnBase) return false;
                     
                     const correoBaseLimpio = correoEnBase.toString().trim().toLowerCase();
-                    
-                    // Solo mostrar primeras 5 comparaciones
-                    if (allRecords.indexOf(record) < 5) {
-                        console.log(`Comparando: "${correoLimpio}" === "${correoBaseLimpio}"`);
-                    }
-                    
                     return correoBaseLimpio === correoLimpio;
                 });
 
@@ -582,6 +592,10 @@
                 if (!response.ok) {
                     throw new Error('Error al registrar el cliente');
                 }
+
+                // Limpiar caché para que la próxima validación obtenga datos frescos
+                cachedRecords = null;
+                cacheTime = null;
 
                 successMessage.classList.add('show');
                 form.reset();
