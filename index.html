@@ -242,12 +242,8 @@
     </div>
 
     <script>
-        // Configuración de Airtable
-        const AIRTABLE_CONFIG = {
-            token: 'pat1dOajFJusEXfH6.a6bdf11af2b0fa4c1fab8f90d85350209e3f9c0ea020e5e52fe02021a4c8e6e5',
-            baseId: 'app9mioaVtaFhzILs',
-            tableId: 'tblfRI4vdXspaNNlD'
-        };
+        // 🔒 AHORA USA EL ENDPOINT SEGURO
+        const API_ENDPOINT = '/api/airtable';
 
         const rutInput = document.getElementById('rut');
         const rutValidation = document.getElementById('rutValidation');
@@ -264,10 +260,8 @@
 
         // Función para formatear RUT chileno
         function formatRut(value) {
-            // Remover todo excepto números y K
             value = value.replace(/[^0-9kK]/g, '').toUpperCase();
             
-            // Limitar a 9 caracteres (8-9 dígitos + DV)
             if (value.length > 9) {
                 value = value.substring(0, 9);
             }
@@ -276,11 +270,9 @@
                 return value;
             }
             
-            // Separar dígito verificador
             const dv = value.slice(-1);
             let rut = value.slice(0, -1);
             
-            // Formatear con puntos
             let formatted = '';
             let counter = 0;
             for (let i = rut.length - 1; i >= 0; i--) {
@@ -295,26 +287,20 @@
             return formatted + '-' + dv;
         }
 
-        // Función para limpiar RUT (solo números y K)
         function cleanRut(rut) {
             return rut.replace(/[^0-9kK]/g, '').toUpperCase();
         }
 
-        // Función para validar formato de RUT chileno
         function validarRutChileno(rut) {
-            // Limpiar RUT
             rut = cleanRut(rut);
             
-            // Debe tener entre 8 y 9 caracteres
             if (rut.length < 8 || rut.length > 9) {
                 return false;
             }
             
-            // Separar cuerpo y dígito verificador
             const cuerpo = rut.slice(0, -1);
             const dv = rut.slice(-1);
             
-            // Calcular dígito verificador
             let suma = 0;
             let multiplo = 2;
             
@@ -338,16 +324,13 @@
             return dv === dvCalculado;
         }
 
-        // Validar RUT en tiempo real con formateo
         rutInput.addEventListener('input', function(e) {
             const cursorPosition = this.selectionStart;
             const oldValue = this.value;
             const oldLength = oldValue.length;
             
-            // Formatear el valor
             this.value = formatRut(this.value);
             
-            // Ajustar posición del cursor
             const newLength = this.value.length;
             const diff = newLength - oldLength;
             this.setSelectionRange(cursorPosition + diff, cursorPosition + diff);
@@ -361,7 +344,6 @@
                 return;
             }
 
-            // Validar formato solo si tiene la longitud mínima
             if (rut.length >= 8) {
                 if (!validarRutChileno(rut)) {
                     rutValidation.className = 'validation-message error';
@@ -372,12 +354,10 @@
                     return;
                 }
 
-                // Mostrar mensaje de verificación
                 rutValidation.className = 'validation-message checking';
                 rutValidation.innerHTML = '<span class="spinner"></span> Verificando RUT...';
                 rutInput.className = '';
 
-                // Esperar 800ms después de que el usuario deje de escribir
                 validationTimeout = setTimeout(() => {
                     checkRutDuplicate(rut);
                 }, 800);
@@ -387,7 +367,6 @@
             }
         });
 
-        // Validar Correo en tiempo real
         correoInput.addEventListener('input', function() {
             clearTimeout(correoValidationTimeout);
             const correo = this.value.trim();
@@ -398,7 +377,6 @@
                 return;
             }
 
-            // Validar formato de email primero
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(correo)) {
                 correoValidation.className = 'validation-message';
@@ -409,25 +387,20 @@
                 return;
             }
 
-            // Mostrar mensaje de verificación
             correoValidation.className = 'validation-message checking';
             correoValidation.innerHTML = '<span class="spinner"></span> Verificando correo...';
             correoInput.className = '';
 
-            // Esperar 800ms después de que el usuario deje de escribir
             correoValidationTimeout = setTimeout(() => {
                 checkCorreoDuplicate(correo);
             }, 800);
         });
 
-        // Función para verificar RUT duplicado
         async function checkRutDuplicate(rut) {
             try {
-                const url = `https://api.airtable.com/v0/${AIRTABLE_CONFIG.baseId}/${AIRTABLE_CONFIG.tableId}`;
-                
-                const response = await fetch(url, {
+                const response = await fetch(API_ENDPOINT, {
+                    method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${AIRTABLE_CONFIG.token}`,
                         'Content-Type': 'application/json'
                     }
                 });
@@ -438,20 +411,17 @@
 
                 const data = await response.json();
                 
-                // Buscar RUT duplicado (comparar sin formato)
                 const duplicado = data.records.find(record => {
                     const rutEnBase = record.fields['Rut.'];
                     return rutEnBase && cleanRut(rutEnBase.toString()) === cleanRut(rut);
                 });
 
                 if (duplicado) {
-                    // RUT duplicado encontrado
                     rutValidation.className = 'validation-message error';
                     rutValidation.innerHTML = '❌ Este RUT ya está registrado';
                     rutInput.className = 'error';
                     isRutValid = false;
                 } else {
-                    // RUT disponible
                     rutValidation.className = 'validation-message success';
                     rutValidation.innerHTML = '✅ RUT disponible';
                     rutInput.className = 'success';
@@ -468,14 +438,11 @@
             }
         }
 
-        // Función para verificar Correo duplicado
         async function checkCorreoDuplicate(correo) {
             try {
-                const url = `https://api.airtable.com/v0/${AIRTABLE_CONFIG.baseId}/${AIRTABLE_CONFIG.tableId}`;
-                
-                const response = await fetch(url, {
+                const response = await fetch(API_ENDPOINT, {
+                    method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${AIRTABLE_CONFIG.token}`,
                         'Content-Type': 'application/json'
                     }
                 });
@@ -486,20 +453,17 @@
 
                 const data = await response.json();
                 
-                // Buscar correo duplicado (case insensitive)
                 const duplicado = data.records.find(record => {
                     const correoEnBase = record.fields['Correo Electrónico'];
                     return correoEnBase && correoEnBase.toString().trim().toLowerCase() === correo.toLowerCase();
                 });
 
                 if (duplicado) {
-                    // Correo duplicado encontrado
                     correoValidation.className = 'validation-message error';
                     correoValidation.innerHTML = '❌ Este correo ya está registrado';
                     correoInput.className = 'error';
                     isCorreoValid = false;
                 } else {
-                    // Correo disponible
                     correoValidation.className = 'validation-message success';
                     correoValidation.innerHTML = '✅ Correo disponible';
                     correoInput.className = 'success';
@@ -531,11 +495,9 @@
         }
 
         function checkFormValidity() {
-            // El formulario solo se puede enviar si tanto RUT como Correo son válidos
             submitBtn.disabled = !(isRutValid && isCorreoValid);
         }
 
-        // Enviar formulario
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
 
@@ -563,12 +525,9 @@
                     }
                 };
 
-                const url = `https://api.airtable.com/v0/${AIRTABLE_CONFIG.baseId}/${AIRTABLE_CONFIG.tableId}`;
-
-                const response = await fetch(url, {
+                const response = await fetch(API_ENDPOINT, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${AIRTABLE_CONFIG.token}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(formData)
@@ -578,7 +537,6 @@
                     throw new Error('Error al registrar el cliente');
                 }
 
-                // Éxito
                 successMessage.classList.add('show');
                 form.reset();
                 resetRutValidation();
