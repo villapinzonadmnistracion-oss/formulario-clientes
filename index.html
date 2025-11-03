@@ -480,12 +480,35 @@
                 
                 const rutLimpio = cleanRut(rut);
                 console.log('🔍 Buscando RUT:', rutLimpio);
+                console.log('📋 Total de registros a revisar:', allRecords.length);
+                
+                // DEBUG: Mostrar los primeros 5 RUTs en la base de datos
+                console.log('🔬 PRIMEROS 5 REGISTROS EN LA BASE:');
+                allRecords.slice(0, 5).forEach((record, index) => {
+                    const rutEnBase = record.fields['Rut.'];
+                    console.log(`  ${index + 1}. Campo "Rut.":`, rutEnBase);
+                    if (rutEnBase) {
+                        console.log(`     Limpio: "${cleanRut(rutEnBase.toString())}"`);
+                    }
+                });
+                
+                // DEBUG: Mostrar TODOS los campos del primer registro
+                if (allRecords.length > 0) {
+                    console.log('🔬 TODOS LOS CAMPOS DEL PRIMER REGISTRO:');
+                    console.log(allRecords[0].fields);
+                }
                 
                 const duplicado = allRecords.find(record => {
                     const rutEnBase = record.fields['Rut.'];
                     if (!rutEnBase) return false;
                     
                     const rutBaseLimpio = cleanRut(rutEnBase.toString());
+                    
+                    // Log cada comparación
+                    if (rutBaseLimpio.startsWith('19606')) {
+                        console.log(`🔎 Comparando: "${rutLimpio}" === "${rutBaseLimpio}"`);
+                    }
+                    
                     return rutLimpio === rutBaseLimpio;
                 });
 
