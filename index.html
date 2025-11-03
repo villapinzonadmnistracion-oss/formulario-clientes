@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro Cliente - Stock Punto Secreto</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #2d3748;
+            font-size: 32px;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            color: #2d3748;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .required {
+            color: #e53e3e;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        input.error {
+            border-color: #e53e3e;
+        }
+
+        input.success {
+            border-color: #48bb78;
+        }
+
+        .validation-message {
+            margin-top: 8px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .validation-message.error {
+            color: #e53e3e;
+        }
+
+        .validation-message.success {
+            color: #48bb78;
+        }
+
+        .validation-message.checking {
+            color: #667eea;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: #48bb78;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            background: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(72, 187, 120, 0.3);
+        }
+
+        .submit-btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+        }
+
+        .success-message {
+            display: none;
+            background: #48bb78;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .helper-text {
+            font-size: 12px;
+            color: #718096;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>¡Regístrate en Punto Secreto!</h1>
+        </div>
+
+        <form id="clientForm">
+            <div class="form-group">
+                <label for="rut">RUT <span class="required">*</span></label>
+                <input 
+                    type="text" 
+                    id="rut" 
+                    name="rut" 
+                    required 
+                    placeholder="Ej: 12.345.678-9"
+                    autocomplete="off"
+                    maxlength="12"
+                >
+                <div id="rutValidation" class="validation-message"></div>
+                <p class="helper-text">Formato automático con puntos y guión</p>
+            </div>
+
+            <div class="form-group">
+                <label for="nombre">Nombre <span class="required">*</span></label>
+                <input 
+                    type="text" 
+                    id="nombre" 
+                    name="nombre" 
+                    required 
+                    placeholder="Nombre completo"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="fechaCumpleanos">Fecha de nacimiento <span class="required">*</span></label>
+                <input 
+                    type="date" 
+                    id="fechaCumpleanos" 
+                    name="fechaCumpleanos" 
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="telefono">Teléfono <span class="required">*</span></label>
+                <input 
+                    type="tel" 
+                    id="telefono" 
+                    name="telefono" 
+                    required 
+                    placeholder="Ej: +56912345678"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="correo">Correo Electrónico <span class="required">*</span></label>
+                <input 
+                    type="email" 
+                    id="correo" 
+                    name="correo" 
+                    required 
+                    placeholder="ejemplo@correo.com"
+                    autocomplete="off"
+                >
+                <div id="correoValidation" class="validation-message"></div>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                Enviar
+            </button>
+        </form>
+
+        <div id="successMessage" class="success-message">
+            ✅ ¡Te has registrado satisfactoriamente!
+        </div>
+    </div>
+
+    <script>
+        // Configuración de Airtable
+        const AIRTABLE_CONFIG = {
+            token: 'pat1dOajFJusEXfH6.a6bdf11af2b0fa4c1fab8f90d85350209e3f9c0ea020e5e52fe02021a4c8e6e5',
+            baseId: 'app9mioaVtaFhzILs',
+            tableId: 'tblfRI4vdXspaNNlD'
+        };
+
+        const rutInput = document.getElementById('rut');
+        const rutValidation = document.getElementById('rutValidation');
+        const correoInput = document.getElementById('correo');
+        const correoValidation = document.getElementById('correoValidation');
+        const form = document.getElementById('clientForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const successMessage = document.getElementById('successMessage');
+
+        let validationTimeout;
+        let correoValidationTimeout;
+        let isRutValid = false;
+        let isCorreoValid = false;
+
+        // Función para formatear RUT chileno
+        function formatRut(value) {
+            // Remover todo excepto números y K
+            value = value.replace(/[^0-9kK]/g, '').toUpperCase();
+            
+            // Limitar a 9 caracteres (8-9 dígitos + DV)
+            if (value.length > 9) {
+                value = value.substring(0, 9);
+            }
+            
+            if (value.length <= 1) {
+                return value;
+            }
+            
+            // Separar dígito verificador
+            const dv = value.slice(-1);
+            let rut = value.slice(0, -1);
+            
+            // Formatear con puntos
+            let formatted = '';
+            let counter = 0;
+            for (let i = rut.length - 1; i >= 0; i--) {
+                formatted = rut[i] + formatted;
+                counter++;
+                if (counter === 3 && i !== 0) {
+                    formatted = '.' + formatted;
+                    counter = 0;
+                }
+            }
+            
+            return formatted + '-' + dv;
+        }
+
+        // Función para limpiar RUT (solo números y K)
+        function cleanRut(rut) {
+            return rut.replace(/[^0-9kK]/g, '').toUpperCase();
+        }
+
+        // Función para validar formato de RUT chileno
+        function validarRutChileno(rut) {
+            // Limpiar RUT
+            rut = cleanRut(rut);
+            
+            // Debe tener entre 8 y 9 caracteres
+            if (rut.length < 8 || rut.length > 9) {
+                return false;
+            }
+            
+            // Separar cuerpo y dígito verificador
+            const cuerpo = rut.slice(0, -1);
+            const dv = rut.slice(-1);
+            
+            // Calcular dígito verificador
+            let suma = 0;
+            let multiplo = 2;
+            
+            for (let i = cuerpo.length - 1; i >= 0; i--) {
+                suma += parseInt(cuerpo[i]) * multiplo;
+                multiplo = multiplo === 7 ? 2 : multiplo + 1;
+            }
+            
+            const resto = suma % 11;
+            const dvEsperado = 11 - resto;
+            let dvCalculado;
+            
+            if (dvEsperado === 11) {
+                dvCalculado = '0';
+            } else if (dvEsperado === 10) {
+                dvCalculado = 'K';
+            } else {
+                dvCalculado = dvEsperado.toString();
+            }
+            
+            return dv === dvCalculado;
+        }
+
+        // Validar RUT en tiempo real con formateo
+        rutInput.addEventListener('input', function(e) {
+            const cursorPosition = this.selectionStart;
+            const oldValue = this.value;
+            const oldLength = oldValue.length;
+            
+            // Formatear el valor
+            this.value = formatRut(this.value);
+            
+            // Ajustar posición del cursor
+            const newLength = this.value.length;
+            const diff = newLength - oldLength;
+            this.setSelectionRange(cursorPosition + diff, cursorPosition + diff);
+            
+            clearTimeout(validationTimeout);
+            const rut = cleanRut(this.value);
+
+            if (rut.length === 0) {
+                resetRutValidation();
+                checkFormValidity();
+                return;
+            }
+
+            // Validar formato solo si tiene la longitud mínima
+            if (rut.length >= 8) {
+                if (!validarRutChileno(rut)) {
+                    rutValidation.className = 'validation-message error';
+                    rutValidation.innerHTML = '❌ RUT inválido';
+                    rutInput.className = 'error';
+                    isRutValid = false;
+                    checkFormValidity();
+                    return;
+                }
+
+                // Mostrar mensaje de verificación
+                rutValidation.className = 'validation-message checking';
+                rutValidation.innerHTML = '<span class="spinner"></span> Verificando RUT...';
+                rutInput.className = '';
+
+                // Esperar 800ms después de que el usuario deje de escribir
+                validationTimeout = setTimeout(() => {
+                    checkRutDuplicate(rut);
+                }, 800);
+            } else {
+                resetRutValidation();
+                checkFormValidity();
+            }
+        });
+
+        // Validar Correo en tiempo real
+        correoInput.addEventListener('input', function() {
+            clearTimeout(correoValidationTimeout);
+            const correo = this.value.trim();
+
+            if (correo.length === 0) {
+                resetCorreoValidation();
+                checkFormValidity();
+                return;
+            }
+
+            // Validar formato de email primero
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(correo)) {
+                correoValidation.className = 'validation-message';
+                correoValidation.innerHTML = '';
+                correoInput.className = '';
+                isCorreoValid = false;
+                checkFormValidity();
+                return;
+            }
+
+            // Mostrar mensaje de verificación
+            correoValidation.className = 'validation-message checking';
+            correoValidation.innerHTML = '<span class="spinner"></span> Verificando correo...';
+            correoInput.className = '';
+
+            // Esperar 800ms después de que el usuario deje de escribir
+            correoValidationTimeout = setTimeout(() => {
+                checkCorreoDuplicate(correo);
+            }, 800);
+        });
+
+        // Función para verificar RUT duplicado
+        async function checkRutDuplicate(rut) {
+            try {
+                const url = `https://api.airtable.com/v0/${AIRTABLE_CONFIG.baseId}/${AIRTABLE_CONFIG.tableId}`;
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${AIRTABLE_CONFIG.token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error al consultar la base de datos');
+                }
+
+                const data = await response.json();
+                
+                // Buscar RUT duplicado (comparar sin formato)
+                const duplicado = data.records.find(record => {
+                    const rutEnBase = record.fields['Rut.'];
+                    return rutEnBase && cleanRut(rutEnBase.toString()) === cleanRut(rut);
+                });
+
+                if (duplicado) {
+                    // RUT duplicado encontrado
+                    rutValidation.className = 'validation-message error';
+                    rutValidation.innerHTML = '❌ Este RUT ya está registrado';
+                    rutInput.className = 'error';
+                    isRutValid = false;
+                } else {
+                    // RUT disponible
+                    rutValidation.className = 'validation-message success';
+                    rutValidation.innerHTML = '✅ RUT disponible';
+                    rutInput.className = 'success';
+                    isRutValid = true;
+                }
+                checkFormValidity();
+            } catch (error) {
+                console.error('Error:', error);
+                rutValidation.className = 'validation-message error';
+                rutValidation.innerHTML = '⚠️ Error al verificar. Intenta nuevamente.';
+                rutInput.className = 'error';
+                isRutValid = false;
+                checkFormValidity();
+            }
+        }
+
+        // Función para verificar Correo duplicado
+        async function checkCorreoDuplicate(correo) {
+            try {
+                const url = `https://api.airtable.com/v0/${AIRTABLE_CONFIG.baseId}/${AIRTABLE_CONFIG.tableId}`;
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${AIRTABLE_CONFIG.token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error al consultar la base de datos');
+                }
+
+                const data = await response.json();
+                
+                // Buscar correo duplicado (case insensitive)
+                const duplicado = data.records.find(record => {
+                    const correoEnBase = record.fields['Correo Electrónico'];
+                    return correoEnBase && correoEnBase.toString().trim().toLowerCase() === correo.toLowerCase();
+                });
+
+                if (duplicado) {
+                    // Correo duplicado encontrado
+                    correoValidation.className = 'validation-message error';
+                    correoValidation.innerHTML = '❌ Este correo ya está registrado';
+                    correoInput.className = 'error';
+                    isCorreoValid = false;
+                } else {
+                    // Correo disponible
+                    correoValidation.className = 'validation-message success';
+                    correoValidation.innerHTML = '✅ Correo disponible';
+                    correoInput.className = 'success';
+                    isCorreoValid = true;
+                }
+                checkFormValidity();
+            } catch (error) {
+                console.error('Error:', error);
+                correoValidation.className = 'validation-message error';
+                correoValidation.innerHTML = '⚠️ Error al verificar. Intenta nuevamente.';
+                correoInput.className = 'error';
+                isCorreoValid = false;
+                checkFormValidity();
+            }
+        }
+
+        function resetRutValidation() {
+            rutValidation.innerHTML = '';
+            rutValidation.className = 'validation-message';
+            rutInput.className = '';
+            isRutValid = false;
+        }
+
+        function resetCorreoValidation() {
+            correoValidation.innerHTML = '';
+            correoValidation.className = 'validation-message';
+            correoInput.className = '';
+            isCorreoValid = false;
+        }
+
+        function checkFormValidity() {
+            // El formulario solo se puede enviar si tanto RUT como Correo son válidos
+            submitBtn.disabled = !(isRutValid && isCorreoValid);
+        }
+
+        // Enviar formulario
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            if (!isRutValid) {
+                alert('Por favor verifica que el RUT sea válido y no esté duplicado.');
+                return;
+            }
+
+            if (!isCorreoValid) {
+                alert('Por favor verifica que el correo electrónico sea válido y no esté duplicado.');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner"></span> Registrando...';
+
+            try {
+                const formData = {
+                    fields: {
+                        'Rut.': rutInput.value.trim(),
+                        'Nombre': document.getElementById('nombre').value.trim(),
+                        'Fecha Cumpleaños': document.getElementById('fechaCumpleanos').value,
+                        'Teléfono': document.getElementById('telefono').value.trim(),
+                        'Correo Electrónico': document.getElementById('correo').value.trim()
+                    }
+                };
+
+                const url = `https://api.airtable.com/v0/${AIRTABLE_CONFIG.baseId}/${AIRTABLE_CONFIG.tableId}`;
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${AIRTABLE_CONFIG.token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error al registrar el cliente');
+                }
+
+                // Éxito
+                successMessage.classList.add('show');
+                form.reset();
+                resetRutValidation();
+                resetCorreoValidation();
+                checkFormValidity();
+                
+                setTimeout(() => {
+                    successMessage.classList.remove('show');
+                }, 5000);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Hubo un error al registrar el cliente. Por favor intenta nuevamente.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Enviar';
+            }
+        });
+    </script>
+</body>
+</html>
