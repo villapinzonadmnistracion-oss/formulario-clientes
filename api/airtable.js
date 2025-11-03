@@ -16,23 +16,36 @@ export default async function handler(req, res) {
     const AIRTABLE_BASE_ID = process.env.BASE_ID_AIRTABLE;
     const AIRTABLE_TABLE_ID = process.env.TABLE_ID_AIRTABLE;
 
+    // Debug mejorado
+    console.log('🔍 Variables de entorno:', {
+        TOKEN_exists: !!AIRTABLE_TOKEN,
+        BASE_exists: !!AIRTABLE_BASE_ID,
+        TABLE_exists: !!AIRTABLE_TABLE_ID,
+        TOKEN_length: AIRTABLE_TOKEN?.length || 0,
+        BASE_value: AIRTABLE_BASE_ID || 'undefined',
+        TABLE_value: AIRTABLE_TABLE_ID || 'undefined'
+    });
+
     // Verificar que las variables de entorno estén configuradas
     if (!AIRTABLE_TOKEN || !AIRTABLE_BASE_ID || !AIRTABLE_TABLE_ID) {
-        console.error('Variables faltantes:', {
-            token: !!AIRTABLE_TOKEN,
-            base: !!AIRTABLE_BASE_ID,
-            table: !!AIRTABLE_TABLE_ID
-        });
+        console.error('❌ Variables de entorno faltantes');
         return res.status(500).json({ 
-            error: 'Configuración del servidor incompleta' 
+            error: 'Configuración del servidor incompleta',
+            debug: {
+                token: !!AIRTABLE_TOKEN,
+                base: !!AIRTABLE_BASE_ID,
+                table: !!AIRTABLE_TABLE_ID
+            }
         });
     }
 
     const airtableUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}`;
+    console.log('📡 URL de Airtable:', airtableUrl);
 
     try {
         if (req.method === 'GET') {
-            // Obtener todos los registros
+            console.log('📥 GET request recibido');
+            
             const response = await fetch(airtableUrl, {
                 method: 'GET',
                 headers: {
@@ -43,22 +56,27 @@ export default async function handler(req, res) {
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('Error de Airtable:', response.status, errorText);
-                throw new Error(`Error de Airtable: ${response.status}`);
+                console.error('❌ Error de Airtable:', response.status, errorText);
+                throw new Error(`Error de Airtable: ${response.status} - ${errorText}`);
             }
 
             const data = await response.json();
+            console.log('✅ Datos obtenidos:', data.records?.length || 0, 'registros');
             return res.status(200).json(data);
 
         } else if (req.method === 'POST') {
-            // Crear nuevo registro
+            console.log('📤 POST request recibido');
+            
             const { fields } = req.body;
 
             if (!fields) {
+                console.error('❌ Datos inválidos en POST');
                 return res.status(400).json({ 
                     error: 'Datos inválidos: se requiere el campo "fields"' 
                 });
             }
+
+            console.log('📝 Creando registro con campos:', Object.keys(fields));
 
             const response = await fetch(airtableUrl, {
                 method: 'POST',
@@ -71,22 +89,23 @@ export default async function handler(req, res) {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                console.error('Error al crear registro:', errorData);
+                console.error('❌ Error al crear registro:', errorData);
                 throw new Error(`Error de Airtable: ${JSON.stringify(errorData)}`);
             }
 
             const data = await response.json();
+            console.log('✅ Registro creado exitosamente:', data.id);
             return res.status(201).json(data);
 
         } else {
-            // Método no permitido
+            console.error('❌ Método no permitido:', req.method);
             return res.status(405).json({ 
                 error: 'Método no permitido' 
             });
         }
 
     } catch (error) {
-        console.error('Error en el endpoint:', error);
+        console.error('💥 Error en el endpoint:', error.message);
         return res.status(500).json({ 
             error: 'Error interno del servidor',
             details: error.message 
