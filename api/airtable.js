@@ -39,12 +39,19 @@ export default async function handler(req, res) {
         });
     }
 
-    const airtableUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}`;
-    console.log('📡 URL de Airtable:', airtableUrl);
-
     try {
         if (req.method === 'GET') {
             console.log('📥 GET request recibido');
+            
+            // 🆕 CONSTRUIR URL CON ORDENAMIENTO Y PAGINACIÓN
+            const offset = req.query.offset;
+            let airtableUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}?sort%5B0%5D%5Bfield%5D=Numeraci%C3%B3n&sort%5B0%5D%5Bdirection%5D=asc`;
+            
+            if (offset) {
+                airtableUrl += `&offset=${encodeURIComponent(offset)}`;
+            }
+            
+            console.log('📡 URL de Airtable:', airtableUrl);
             
             const response = await fetch(airtableUrl, {
                 method: 'GET',
@@ -77,6 +84,9 @@ export default async function handler(req, res) {
             }
 
             console.log('📝 Creando registro con campos:', Object.keys(fields));
+
+            // Para POST usamos la URL base sin ordenamiento
+            const airtableUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}`;
 
             const response = await fetch(airtableUrl, {
                 method: 'POST',
