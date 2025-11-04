@@ -42,24 +42,14 @@ export default async function handler(req, res) {
     try {
         if (req.method === 'GET') {
             console.log('📥 GET request recibido');
-            console.log('📋 Query params:', req.query);
             
-            // 🆕 CONSTRUIR URL CON ORDENAMIENTO Y PAGINACIÓN
+            // Construir URL simple con paginación (SIN ORDENAMIENTO)
             const offset = req.query.offset;
-            
-            // Construir la URL base
             let airtableUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}`;
             
-            // Agregar parámetros de ordenamiento
-            const params = new URLSearchParams();
-            params.append('sort[0][field]', 'Numeración');
-            params.append('sort[0][direction]', 'asc');
-            
             if (offset) {
-                params.append('offset', offset);
+                airtableUrl += `?offset=${encodeURIComponent(offset)}`;
             }
-            
-            airtableUrl += '?' + params.toString();
             
             console.log('📡 URL de Airtable:', airtableUrl);
             
@@ -71,19 +61,10 @@ export default async function handler(req, res) {
                 }
             });
 
-            console.log('📡 Response status:', response.status);
-            console.log('📡 Response ok:', response.ok);
-
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('❌ Error de Airtable:', response.status, errorText);
-                
-                // Devolver error más detallado
-                return res.status(response.status).json({
-                    error: 'Error de Airtable',
-                    status: response.status,
-                    details: errorText
-                });
+                throw new Error(`Error de Airtable: ${response.status} - ${errorText}`);
             }
 
             const data = await response.json();
@@ -104,7 +85,6 @@ export default async function handler(req, res) {
 
             console.log('📝 Creando registro con campos:', Object.keys(fields));
 
-            // Para POST usamos la URL base sin ordenamiento
             const airtableUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}`;
 
             const response = await fetch(airtableUrl, {
@@ -135,11 +115,9 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error('💥 Error en el endpoint:', error.message);
-        console.error('💥 Error stack:', error.stack);
         return res.status(500).json({ 
             error: 'Error interno del servidor',
-            details: error.message,
-            stack: error.stack
+            details: error.message 
         });
     }
 }
